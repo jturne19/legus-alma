@@ -257,8 +257,97 @@ need to use casa version 4.7.0-1 (r38335) because that's what was orginally used
 ```bash
 cd script
 casa-release-4.7.0-1-el7/bin/casa --pipeline
+
+# to run in parallel using mpi
+casa-release-4.7.0-1-el7/bin/mpicasa -n N casa-release-4.7.0-1-el7/bin/casa  --pipeline
+# where N is the number of cores you want to use on the machine
+
 ```
 ```python
 execfile('scriptForPI.py')
+# takes a few hours
+```
+
+copy or move over the newly created calibrated/uid*split.cal over to imaging directory and start casa there
+
+```python
+execfile('../../../image_prep.py')
+
+# selected parts from image.py
+finalvis='calibrated_final.ms'
+contspws = '0,1,2,3'	# check output calibrated_final.ms.listobs.txt!
+
+flagmanager(vis=finalvis,mode='save',
+			versionname='before_cont_flags')
+initweights(vis=finalvis,wtmode='weight',dowtsp=True)
+
+contvis='calibrated_final_cont.ms'
+rmtables(contvis)
+os.system('rm -rf ' + contvis + '.flagversions')
+
+# 12m width=[8,8,8,8]
+# 7m  width=[]
+
+split2(vis=finalvis,
+	   spw=contspws,      
+	   outputvis=contvis,
+	   width=[8,8,8,8], 
+	   datacolumn='data')
+
+
+# get antenna from weblog -> click any *target.ms -> antenna setup -> polar plot -> antenna in middle
+# get field from weblog ---> click any *target.ms -> spatial setup -> plot under mosiac pointings -> field in middle 
+# 12m band 4 -- antenna='DA49', field='15'
+# 7m band 7 --- antenna='CM05', field='26'
+# 12m band 7 -- antenna='DA59', field='71'
+
+plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna='DA49',field='15') 
+plotms(vis=contvis,xaxis='uvdist',yaxis='amp',coloraxis='spw')
+```
+## cleaning
+
+```python
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
+
+field = 'NGC_628'
+imagermode = 'mosaic'
+phasecenter = 15
+cell = '0.06arcsec'
+imsize = 2500
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = 2.0
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+uvtaper = ['1arcsec']
+
+scales = [0,5,15]
+
+contimagename = '12mband4_robust+2_uvtaper1arcsec_multiscale_cleaned'
+
+tclean(vis=contvis,
+	   imagename=contimagename,
+	   field=field,
+	   phasecenter=phasecenter,
+	   specmode='mfs',
+	   deconvolver='clark',
+	   imsize=imsize,
+	   cell=cell,
+	   weighting=weighting,
+	   robust=robust,
+	   niter=niter,
+	   threshold=threshold,
+	   interactive=interactive,
+	   uvtaper=uvtaper,
+	   scales=scales)
+
+
 
 ```
+
