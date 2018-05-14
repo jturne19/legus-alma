@@ -2,53 +2,47 @@
 #>>>                        TEMPLATE IMAGING SCRIPT                                       #
 #>>> =====================================================================================#
 #>>>
-#>>> Updated: Mon Apr  3 11:36:49 EDT 2017
+#>>> Updated: Thu May 10 15:14:02 EDT 2018
 
-
-#>>>
 #>>> Lines beginning with '#>>>' are instructions to the data imager
 #>>> and will be removed from the script delivered to the PI. If you
-#>>> would like to include a comment that will be passed to the PI, begin
-#>>> the line with a single '#', i.e., standard python comment syntax.
-#>>>
-#>>> Helpful tip: Use the commands %cpaste or %paste to copy and paste
-#>>> indented sections of code into the casa command line.
-#>>>
-#>>>--------------------------------------------------------------------------------------#
-#>>>                             Imaging Template                                         #
-#>>>--------------------------------------------------------------------------------------#
-#>>>
+#>>> would like to include a comment that will be passed to the PI,
+#>>> begin the line with a single '#', i.e., standard python comment
+#>>> syntax.  Helpful tip: Use the commands %cpaste or %paste to copy
+#>>> and paste indented sections of code into the casa command line.
+#>>> --------------------------------------------------------------------------------------#
+#>>> Imaging Template #
+#>>> --------------------------------------------------------------------------------------#
 #>>> The commands below serve as a guide to best practices for imaging
 #>>> ALMA data. It does not replace careful thought on your part while
 #>>> imaging the data. You can remove or modify sections as necessary
 #>>> depending on your particular imaging case (e.g., no
-#>>> self-calibration, continuum only.) Please read the NA Imaging Guide
+#>>> self-calibration, continuum only.) Please read the NA Imaging
+#>>> Guide
 #>>> (https://staff.nrao.edu/wiki/bin/view/NAASC/NAImagingScripts) for
-#>>> more information.
-#>>>
-#>>> Before imaging, you should use the commands the first section of
-#>>> this script to prep the data for imaging.  The commands in both
-#>>> sections should be able to be run as as standard Python
-#>>> script. However, the cleaning in this script is done interactively
-#>>> making the final product somewhat dependent on the individual doing
-#>>> the clean -- please clean conservatively (i.e., don't box every
-#>>> possible source). The final data products are the cleaned images
-#>>> (*.image), the primary beam corrected images (*.pbcor), and the
-#>>> primary beams (*.flux). These images should be converted to fits at
-#>>> the end of the script (see example at the end of this file).
-#>>>
-#>>> This script (and the associated guide) are under active
-#>>> development. Please contact Amanda Kepley (akepley@nrao.edu) if you
-#>>> have any suggested changes or find any bugs that are almost
-#>>> certainly there.
+#>>> more information.  Before imaging, you should use the commands
+#>>> the first section of this script to prep the data for imaging.
+#>>> The commands in both sections should be able to be run as as
+#>>> standard Python script. However, the cleaning in this script is
+#>>> done interactively making the final product somewhat dependent on
+#>>> the individual doing the clean -- please clean conservatively
+#>>> (i.e., don't box every possible source). The final data products
+#>>> are the primary beam corrected images (*.pbcor), and the primary
+#>>> beams (*.pb). These images should be converted to fits at the end
+#>>> of the script (see example at the end of this file).  This script
+#>>> (and the associated guide) are under active development. Please
+#>>> contact Amanda Kepley (akepley@nrao.edu) if you have any
+#>>> suggested changes or find any bugs that are almost certainly
+#>>> there.
 
 ########################################
 # Check CASA version
 
-#import re
+import re
+import casadef
 
-#if casadef.casa_version < '4.4.0' :
- #   sys.exit("Please use CASA version greater than or equal to 4.4.0 with this script")
+if casadef.casa_version < '4.4.0' :
+    sys.exit("Please use CASA version greater than or equal to 4.4.0 with this script")
 
 
 ##################################################
@@ -86,17 +80,17 @@ finalvis='calibrated_final.ms' # This is your output ms from the data
 #>>> spectra for each field are significantly different from each other,
 #>>> it may be necessary to make separate average continuum  and
 #>>> continuum-subtracted measurement sets for each field.
-#plotms(vis=finalvis, xaxis='channel', yaxis='amplitude',
- #      ydatacolumn='data',
-  #     avgtime='1e8', avgscan=True, avgchannel='1', 
-   #    iteraxis='spw' )
+plotms(vis=finalvis, xaxis='channel', yaxis='amplitude',
+       ydatacolumn='data',
+       avgtime='1e8', avgscan=True, avgchannel='1', 
+       iteraxis='spw' )
 
 
 #>>> In CASA 4.4 and higher, the behavior of the avgchannel parameter
 #>>> has changed. Now when you plot binned channels, plotms displays
 #>>> the "bin" number rather than the average channel number of each
 #>>> bin. A ticket has been filed to revert this back to the previous
-#>>> (more sensible) behavior.
+#>>> (more sensible) behavior, but this behavior hasn't been fixed as of CASA 5.1.
 
 #>>> If you don't see any obvious lines in the above plot, you may to try
 #>>> to set avgbaseline=True with uvrange (e.g., <100m). Limiting the
@@ -119,16 +113,16 @@ flagmanager(vis=finalvis,mode='save',
 initweights(vis=finalvis,wtmode='weight',dowtsp=True)
 
 # Flag the "line channels"
-#flagchannels='2:1201~2199,3:1201~2199' # In this example , spws 2&3 have a line between channels 1201 and 2199 and spectral windows 0 and 1 are line-free.
+flagchannels='2:1201~2199,3:1201~2199' # In this example , spws 2&3 have a line between channels 1201 and 2199 and spectral windows 0 and 1 are line-free.
 
 
-#flagdata(vis=finalvis,mode='manual',
-  #        spw=flagchannels,flagbackup=False)
+flagdata(vis=finalvis,mode='manual',
+          spw=flagchannels,flagbackup=False)
 
 # check that flags are as expected, NOTE must check reload on plotms
 # gui if its still open.
-#plotms(vis=finalvis,yaxis='amp',xaxis='channel',
- #      avgchannel='1',avgtime='1e8',avgscan=True,iteraxis='spw') 
+plotms(vis=finalvis,yaxis='amp',xaxis='channel',
+       avgchannel='1',avgtime='1e8',avgscan=True,iteraxis='spw') 
 
 # Average the channels within spws
 contvis='calibrated_final_cont.ms'
@@ -145,20 +139,22 @@ os.system('rm -rf ' + contvis + '.flagversions')
 #>>> 95%. See the "for continuum" header for more information on the imaging
 #>>> wiki for more infomration.
 
-split2(vis=finalvis,
+#>>> Note that in CASA 5.1, split2 is now split. Previously split2 was
+#>>> needed to deal correctly with channelized weights.
+split(vis=finalvis,
      spw=contspws,      
      outputvis=contvis,
-     width=[8,8,8,8], # number of channels to average together. The final channel width should be less than 125MHz in Bands 3, 4, and 6 and 250MHz in Band 7.
+      width=[256,8,8,8], # number of channels to average together. The final channel width should be less than 125MHz in Bands 3, 4, and 6 and 250MHz in Band 7.
      datacolumn='data')
 
 
 # Check the weights. You will need to change antenna and field to
 # appropriate values
-plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna='DA41',field='15')
+plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna='DA42',field='0')
 
 # If you flagged any line channels, restore the previous flags
-#flagmanager(vis=finalvis,mode='restore',
-#            versionname='before_cont_flags')
+flagmanager(vis=finalvis,mode='restore',
+            versionname='before_cont_flags')
 
 # Inspect continuum for any problems
 plotms(vis=contvis,xaxis='uvdist',yaxis='amp',coloraxis='spw')
@@ -172,10 +168,10 @@ plotms(vis=contvis,xaxis='uvdist',yaxis='amp',coloraxis='spw')
 # source parameters
 # ------------------
 
-field='NGC_628' # science field(s). For a mosaic, select all mosaic fields. DO NOT LEAVE BLANK ('') OR YOU WILL TRIGGER A BUG IN CLEAN THAT WILL PUT THE WRONG COORDINATE SYSTEM ON YOUR FINAL IMAGE.
-# imagermode='csclean' # uncomment if single field 
-imagermode='mosaic' # uncomment if mosaic or if combining one 7m and one 12m pointing.
-phasecenter=15 # uncomment and set to field number for phase
+field='0' # science field(s). For a mosaic, select all mosaic fields. DO NOT LEAVE BLANK ('') OR YOU WILL POTENTIALLY TRIGGER A BUG IN CLEAN THAT WILL PUT THE WRONG COORDINATE SYSTEM ON YOUR FINAL IMAGE.
+# gridder='standard' # uncomment if single field 
+# gridder='mosaic' # uncomment if mosaic or if combining one 7m and one 12m pointing.
+# phasecenter=3 # uncomment and set to field number for phase
                 # center. Note lack of ''.  Use the weblog to
                 # determine which pointing to use. Remember that the
                 # field ids for each pointing will be re-numbered
@@ -223,13 +219,13 @@ phasecenter=15 # uncomment and set to field number for phase
 #>>> into account the projection of the baselines, so the plotms
 #>>> method is more accurate.
 
-cell='0.06arcsec' # cell size for imaging.
-imsize = [2160,2000] # size of image in pixels.
+cell='1arcsec' # cell size for imaging.
+imsize = [128,128] # size of image in pixels.
 
 # velocity parameters
 # -------------------
 
-outframe='bary' # velocity reference frame. See science goals.
+outframe='lsrk' # velocity reference frame. 
 veltype='radio' # velocity type. 
 
 #>>> Note on veltype: For quality assurance purposes, we recommend keeping veltype
@@ -245,7 +241,7 @@ veltype='radio' # velocity type.
 # be controlled within clean. 
 
 weighting = 'briggs'
-robust=-2
+robust=0.5
 niter=1000
 threshold = '0.0mJy'
 
@@ -254,7 +250,23 @@ threshold = '0.0mJy'
 
 # Set the ms and continuum image name.
 contvis = 'calibrated_final_cont.ms'         
-contimagename = 'calibrated_final_cont'
+
+#>>> Generate the relevant image name and copy and paste imagename for PI
+
+#>>> The spwmap parameter renumbers the images to match the archival
+#>>> spectral windows, which aren't renumbered, unlike the manual
+#>>> imaging spectral windows, which are renumbered by split in the
+#>>> imaging prep script. It is defined similarly to other spwmap
+#>>> parameters. For example, to map spw (e.g., 0,1,2,3) in
+#>>> *.split.cal to their original values (e.g., 17, 19, 21, 23), you
+#>>> would set spwmap=[17,19,21,23]. The sciencespws variable was
+#>>> created in the scriptForImagingPrep.py in the first step. You can
+#>>> also do a listobs on the original ms to get the spectral windows,
+#>>> e.g.,
+#>>> listobs(vis='uid___A002_Xc3412f_X53ff.ms',intent='OBSERVE_TARGET*',spw='*FULL_RES*')
+
+#>>>  aU.genImageName(vis=contvis,spw=map(int,contspws.split(',')),field=int(field.split('~')[0]),imtype='mfs',targettype='sci',stokes='I',mous='',modtext='manual',spwmap=map(int,sciencespws.split(',')))
+contimagename = '' 
 
 # If necessary, run the following commands to get rid of older clean
 # data.
@@ -262,28 +274,40 @@ contimagename = 'calibrated_final_cont'
 #clearcal(vis=contvis)
 #delmod(vis=contvis)
 
-#for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
-#    rmtables(contimagename+ext)
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
+    rmtables(contimagename+ext)
 
-#>>> The .pb and .wtsum images are only produced with tclean.
+#>>> If you're going be be imaging with nterms>1, then you also need
+#>>> to removed the *.tt0, and *.tt1 images in additional to those
+#>>> listed above.
 
-#>>> If you're going be be imaging with nterms>1, then you also need to removed the *.tt0, and *.tt1 images in additional to those listed above.
+#>>> If the fractional bandwidth for the aggregate continuum is
+#>>> greater than 10%, set deconvolver='mtmfs' to use multi-term,
+#>>> multi-frequency synthesis. This algorithm takes into account the
+#>>> spatial spectral index variations in an image.  Note that only
+#>>> ALMA Band 3 and the lower end of Band 4 can have fractional
+#>>> bandwidths of greater than 10% and only when both sidebands are
+#>>> employed.
 
-clean(vis=contvis,
-      imagename=contimagename,
-      field=field,
-      phasecenter=phasecenter,
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust = robust,
-      niter = niter, 
-      threshold = threshold, 
-      interactive = True,
-      imagermode = imagermode)
-
+tclean(vis=contvis,
+       imagename=contimagename,
+       field=field,
+       #  phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='mfs',
+       deconvolver='hogbom', 
+       # Uncomment the below to image with nterms>1 when the fractional bandwidth is greater than 10%.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting,
+       robust = robust,
+       niter = niter, 
+       threshold = threshold,
+       interactive = True,
+       gridder = gridder,
+       pbcor = True)
+       
 #>>> If interactively cleaning (interactive=True), then note number of
 #>>> iterations at which you stop for the PI. This number will help
 #>>> the PI replicate the delivered images. Do not clean empty
@@ -317,7 +341,7 @@ clean(vis=contvis,
 #>>> may need to adjust the solint parameter.
 
 contvis = 'calibrated_final_cont.ms'         
-contimagename = 'calibrated_final_cont'
+contimagename = '' # Grab from continuum imaging step above if needed.
 
 refant = 'DV09' # reference antenna.
 
@@ -335,32 +359,40 @@ spwmap = [0,0,0] # mapping self-calibration solutions to individual spectral win
 flagmanager(vis=contvis,mode='save',versionname='before_selfcal',merge='replace')
 
 # Get rid of any models that might be hanging around in the image header
-delmod(vis=contvis,field=field,otf=True)
+delmod(vis=contvis,otf=True,scr=True)
 
 # If you are re-doing your self-cal, uncomment the next line to reset
-# your corrected data column back to its original state.
-#clearcal(vis=contvis)
+# your corrected data column back to its original state and get rid of
+# the old model. You can check the contents of the model and corrected
+# data columns by plotting them using plotms. For example, 
+# plotms(vis=contvis, xaxis='uvwave', yaxis='amplitude', ydatacolumn='model',field=field)
+
+# clearcal(vis=contvis)
+# delmod(vis=contvis,otf=True,scr=True)
 
 # shallow clean on the continuum
 
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(contimagename + '_p0'+ ext)
-    
-clean(vis=contvis,
-      imagename=contimagename + '_p0',
-      field=field,
-#      phasecenter=phasecenter, # uncomment if mosaic.      
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust=robust,
-      niter=niter, 
-      threshold=threshold, 
-      interactive=True,
-      usescratch=True, # needed for 4.3 and 4.4 (and maybe 4.5)
-      imagermode=imagermode)
+
+tclean(vis=contvis,
+       imagename=contimagename + '_p0',
+       field=field,
+       #phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='mfs',
+       deconvolver='hogbom',
+       # Uncomment the below to image with nterms>1.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting, 
+       robust=robust,
+       niter=niter, 
+       threshold=threshold, 
+       interactive=True,
+       gridder=gridder,
+       savemodel='modelcolumn')
 
 #>>> Note number of iterations performed.
 
@@ -376,6 +408,11 @@ gaincal(vis=contvis,
         solint='inf',
         minsnr=3.0,
         minblperant=6)
+
+#>>> If many of the above many solutions are flagged, consider setting
+#>>> minsnr=1.5 and comparing the solutions. For low (<~500) dynamic
+#>>> range cases, including a bit more random noise in the solution
+#>>> has only a small effect on the image.
 
 # Check the solution
 plotcal(caltable='pcal1',
@@ -397,24 +434,28 @@ applycal(vis=contvis,
          interp='linearperobs')
 
 # clean deeper
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(contimagename + '_p1'+ ext)
 
-clean(vis=contvis,
-      field=field,
-#      phasecenter=phasecenter, # uncomment if mosaic.      
-      imagename=contimagename + '_p1',
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust=robust,
-      niter=niter, 
-      threshold=threshold, 
-      interactive=True,
-      usescratch=True, # needed for 4.3 and 4.4 (and maybe 4.5)
-      imagermode=imagermode)
+tclean(vis=contvis,
+       imagename=contimagename + '_p1',
+       field=field,
+       # phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='mfs',
+       deconvolver='hogbom',
+       # Uncomment the below to image with nterms>1.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting, 
+       robust=robust,
+       niter=niter, 
+       threshold=threshold, 
+       interactive=True,
+       gridder=gridder,
+       #pbcor = True, #if final image
+       savemodel='modelcolumn')
 
 # Note number of iterations performed.
 
@@ -451,24 +492,28 @@ applycal(vis=contvis,
          interp='linearperobs')
 
 # clean deeper
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(contimagename + '_p2'+ ext)
 
-clean(vis=contvis,
-      imagename=contimagename + '_p2',
-      field=field,
-#      phasecenter=phasecenter, # uncomment if mosaic.            
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust=robust,
-      niter=niter, 
-      threshold=threshold, 
-      interactive=True,
-      usescratch=True, # needed for 4.3 and 4.4 (and maybe 4.5)
-      imagermode=imagermode)
+tclean(vis=contvis,
+       imagename=contimagename + '_p2',
+       field=field,
+       # phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='mfs',
+       deconvolver='hogbom',
+       # Uncomment the below to image with nterms>1.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting, 
+       robust=robust,
+       niter=niter, 
+       threshold=threshold, 
+       interactive=True,
+       gridder=gridder,
+       #pbcor = True, #if final image
+       savemodel='modelcolumn')
 
 #>>> Note number of iterations performed.
 
@@ -505,24 +550,29 @@ applycal(vis=contvis,
          interp='linearperobs')
 
 # do the amplitude self-calibration.
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(contimagename + '_p3'+ ext)
 
-clean(vis=contvis,
-      imagename=contimagename + '_p3',
-      field=field,
-#      phasecenter=phasecenter, # uncomment if mosaic.            
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust=robust,
-      niter=niter, 
-      threshold=threshold, 
-      interactive=True,
-      usescratch=True, # needed for 4.3 and 4.4 (and maybe 4.5)
-      imagermode=imagermode)
+tclean(vis=contvis,
+       imagename=contimagename + '_p3',
+       field=field,
+       # phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='mfs',
+       deconvolver='hogbom',
+       # Uncomment the below to image with nterms>1.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting, 
+       robust=robust,
+       niter=niter, 
+       threshold=threshold, 
+       interactive=True,
+       gridder=gridder,
+       #pbcor = True, #if final image
+       savemodel='modelcolumn')
+
 
 #>>> Note number of iterations performed.
 
@@ -560,24 +610,29 @@ applycal(vis=contvis,
          interp=['linearperobs','linearperobs'])
 
 # Make amplitude and phase self-calibrated image.
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(contimagename + '_ap'+ ext)
 
-clean(vis=contvis,
-      imagename=contimagename + '_ap',
-      field=field, 
+
+tclean(vis=contvis,
+       imagename=contimagename + '_ap',
+       field=field,
 #      phasecenter=phasecenter, # uncomment if mosaic.      
-      mode='mfs',
-      psfmode='clark',
-      imsize = imsize, 
-      cell= cell, 
-      weighting = weighting, 
-      robust=robust,
-      niter=niter, 
-      threshold=threshold, 
-      interactive=True,
-      usescratch=True, # needed for 4.3 and 4.4 (and maybe 4.5)
-      imagermode=imagermode)
+       specmode='mfs',
+       deconvolver='hogbom',
+       # Uncomment the below to image with nterms>1.
+       #deconvolver='mtmfs',
+       #nterms=2,
+       imsize = imsize, 
+       cell= cell, 
+       weighting = weighting, 
+       robust=robust,
+       niter=niter, 
+       threshold=threshold, 
+       interactive=True,
+       gridder=gridder,
+       savemodel='modelcolumn',
+       pbcor=True) # apply the primary beam correction since this is the last image.
 
 #>>> Note final RMS and number of clean iterations. Compare the RMS to
 #>>> the RMS from the earlier, pre-selfcal image.
@@ -607,8 +662,6 @@ clearcal(vis=contvis)
 #>>> subtract the continuum from the line data. You should not continuum
 #>>> subtract if the line of interest is in absorption.
 
-#>>> NOTE THAT WE'RE BACK TO EXCLUDECHANS=FALSE, SO FITSPW INDICATES THE LINE-FREE CHANNELS.
-
 #>>> You can use au.invertChannelRanges(flagchannels,vis=finalvis) to
 #>>> get the fitspw below. You will need to insert any continuum spws
 #>>> that weren't included in flagchannels. For example, if your continuum
@@ -617,8 +670,8 @@ clearcal(vis=contvis)
 #>>> Make sure to cut and paste the output in fitspw below since PIs don't have
 #>>> analysisUtilities by default.
 
-fitspw = '0,1,2:0~1200;1500~3839,3:0~1200;1500~3839' # *line-free* channels for fitting continuum
-linespw = '2,3' # line spectral windows. You can subtract the continuum from multiple spectral line windows at once.
+fitspw = '2:0~1200;1500~3839,3:0~1200;1500~3839' # *line-free* channels for fitting continuum
+linespw = '2,3' # line spectral windows. You can subtract the continuum from multiple spectral line windows at once. The linespw must be in the fitspw unless combine='spw'
 
 finalvis='calibrated_final.ms'
 
@@ -626,7 +679,7 @@ uvcontsub(vis=finalvis,
           spw=linespw, # spw to do continuum subtraction on
           fitspw=fitspw, # regions without lines.
           excludechans=False, # fit the regions in fitspw
-          combine='spw', 
+          #combine='spw', uncomment if there are no line-free channels in the line spectral window.  
           solint='int',
           fitorder=1,
           want_cont=False) # This value should not be changed.
@@ -695,9 +748,7 @@ finalvis = 'calibrated_final.ms'
 # linevis = finalvis + '.contsub.selfcal' # uncommment if both continuum subtracted and self-calibrated
 # linevis = finalvis + '.selfcal' # uncomment if just self-calibrated (no continuum subtraction)
 
-sourcename ='n253' # name of source
-linename = 'CO10' # name of transition (see science goals in OT for name) 
-lineimagename = sourcename+'_'+linename # name of line image
+
 
 restfreq='115.27120GHz' # Typically the rest frequency of the line of
                         # interest. If the source has a significant
@@ -706,11 +757,7 @@ restfreq='115.27120GHz' # Typically the rest frequency of the line of
                         # rest frequency of the
                         # line.
 
-# spw='1' # uncomment and replace with appropriate spw if necessary.
-
-start='-100km/s' # start velocity. See science goals for appropriate value.
-width='2km/s' # velocity width. See science goals.
-nchan = 100  # number of channels. See science goals for appropriate value.
+# spw='1' # uncomment and replace with appropriate spw 
 
 #>>> To specify a spws from multiple executions that had not been regridded using cvel, use
 #>>>       import numpy as np
@@ -722,35 +769,52 @@ nchan = 100  # number of channels. See science goals for appropriate value.
 #>>> to work. Add a constant offset (i.e., +1,+2,+3) to the array
 #>>> generated by np.arange to get the other sets of windows.
 
+#>>> Automatically generate image name for PI and paste info below
+#>>>  aU.genImageName(vis=finalvis,spw=map(int,spw.split(',')),field=int(field.split('~')[0]),imtype='cube',targettype='sci',stokes='I',mous='',modtext='manual',spwmap=map(int,sciencespws.split(','))
+
+#>>>  If you don't have the variable sciencespws already set, you can
+#>>>  determine it via a listobs on the original ms:
+#>>>     listobs(vis='uid___A002_Xc3412f_X53ff.ms',intent='OBSERVE_TARGET*',spw='*FULL_RES*')
+#>>>  Note that sciencespws needs to be a list of integers.
+
+lineimagename =  ''
+
+start='-100km/s' # start velocity. See science goals for appropriate value.
+width='2km/s' # velocity width. See science goals.
+nchan = 100  # number of channels. See science goals for appropriate value.
+
 # If necessary, run the following commands to get rid of older clean
 # data.
 
 #clearcal(vis=linevis)
 #delmod(vis=linevis)
 
-for ext in ['.flux','.image','.mask','.model','.pbcor','.psf','.residual','.flux.pbcoverage','.pb','.wtsum']:
+for ext in ['.image','.mask','.model','.image.pbcor','.psf','.residual','.pb','.sumwt']:
     rmtables(lineimagename + ext)
 
-clean(vis=linevis,
-      imagename=lineimagename, 
-      field=field,
-#      spw=spw,
-#      phasecenter=phasecenter, # uncomment if mosaic.      
-      mode='velocity',
-      start=start,
-      width=width,
-      nchan=nchan, 
-      outframe=outframe, 
-      veltype=veltype, 
-      restfreq=restfreq, 
-      niter=niter,  
-      threshold=threshold, 
-      interactive=True,
-      cell=cell,
-      imsize=imsize, 
-      weighting=weighting, 
-      robust=robust,
-      imagermode=imagermode)
+tclean(vis=linevis,
+       imagename=lineimagename, 
+       field=field,
+       spw=spw,
+       # phasecenter=phasecenter, # uncomment if mosaic.      
+       specmode='cube',
+       start=start,
+       width=width,
+       nchan=nchan, 
+       outframe=outframe,
+       veltype=veltype, 
+       restfreq=restfreq, 
+       niter=niter,  
+       threshold=threshold, 
+       interactive=True,
+       cell=cell,
+       imsize=imsize, 
+       weighting=weighting,
+       robust=robust,
+       gridder=gridder,
+       pbcor=True,
+       restoringbeam='common',
+       chanchunks=-1) # break up large cubes automatically so that you don't run out of memory.
 
 #>>> If interactively cleaning (interactive=True), then note number of
 #>>> iterations at which you stop for the PI. This number will help the
@@ -766,19 +830,6 @@ clean(vis=linevis,
 # os.system('cp -ir ' + lineimagename + '.mask ' + linemaskname)
 
 ##############################################
-# Apply a primary beam correction
-
-import glob
-
-myimages = glob.glob("*.image")
-
-rmtables('*.pbcor')
-for image in myimages:
-    pbimage = image.rsplit('.',1)[0]+'.flux'
-    outfile = image.rsplit('.',1)[0]+'.pbcor'
-    impbcor(imagename=image, pbimage=pbimage, outfile = outfile)
-
-##############################################
 # Export the images
 
 import glob
@@ -787,38 +838,31 @@ myimages = glob.glob("*.pbcor")
 for image in myimages:
     exportfits(imagename=image, fitsimage=image+'.fits',overwrite=True)
 
-myimages = glob.glob("*.flux")
+myimages = glob.glob("*.pb")
 for image in myimages:
     exportfits(imagename=image, fitsimage=image+'.fits',overwrite=True) 
 
 ##############################################
 # Create Diagnostic PNGs
 
-#>>> The following code has not be extensively tested. Please let
-#>>> Amanda Kepley know if you find problems.
-
 os.system("rm -rf *.png")
-mycontimages = glob.glob("calibrated*.image")
+mycontimages = glob.glob("*mfs*manual.image")
 for cimage in mycontimages:
-    max=imstat(cimage)['max'][0]
-    min=-0.1*max
+    mymax=imstat(cimage)['max'][0]
+    mymin=-0.1*mymax
     outimage = cimage+'.png'
     os.system('rm -rf '+outimage)
-    imview(raster={'file':cimage,'range':[min,max]},out=outimage)
+    imview(raster={'file':cimage,'range':[mymin,mymax]},out=outimage)
 
-
-# this will have to be run for each sourcename
-sourcename='' # insert source here, if it isn't already set
-mylineimages = glob.glob(sourcename+"*.image")
+mylineimages = glob.glob("*cube*manual.image")
 for limage in mylineimages:
-    rms=imstat(limage,chans='1')['rms'][0]
     mom8=limage+'.mom8'
     os.system("rm -rf "+mom8)
     immoments(limage,moments=[8],outfile=mom8)
-    max=imstat(mom8)['max'][0]
-    min=-0.1*max
-    os.system("rm "+mom8+".png")
-    imview(raster={'file':mom8,'range':[min,max]},out=mom8+'.png')
+    mymax=imstat(mom8)['max'][0]
+    mymin=-0.1*mymax
+    os.system("rm -rf "+mom8+".png")
+    imview(raster={'file':mom8,'range':[mymin,mymax]},out=mom8+'.png')
 
 
 ##############################################
@@ -827,4 +871,3 @@ for limage in mylineimages:
 # For examples of how to get started analyzing your data, see
 #     https://casaguides.nrao.edu/index.php/TWHydraBand7_Imaging_4.3
 #     
-
