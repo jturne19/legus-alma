@@ -285,15 +285,18 @@ contvis='calibrated_final_cont.ms'
 rmtables(contvis)
 os.system('rm -rf ' + contvis + '.flagversions')
 
-# 12m width=[8,8,8,8]
-# 7m  width=[]
+# band 4 width=[8,8,8,8]
+# band 7 width=[16,16,16,16]
+
+width=[16,16,16,16]
 
 split2(vis=finalvis,
 	   spw=contspws,      
 	   outputvis=contvis,
-	   width=[8,8,8,8], 
+	   width=width, 
 	   datacolumn='data')
 
+# check the weights
 
 # get antenna from weblog -> click any *target.ms -> antenna setup -> polar plot -> antenna in middle
 # get field from weblog ---> click any *target.ms -> spatial setup -> plot under mosiac pointings -> field in middle 
@@ -301,10 +304,14 @@ split2(vis=finalvis,
 # 7m band 7 --- antenna='CM05', field='26'
 # 12m band 7 -- antenna='DA59', field='71'
 
-plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna='DA49',field='15') 
+antenna = 'CM05'
+field = '26'
+plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna=antenna,field=field ) 
+
+# inspect continuum for any problems
 plotms(vis=contvis,xaxis='uvdist',yaxis='amp',coloraxis='spw')
 ```
-## cleaning
+## imaging for band 4 12m
 
 ```python
 contvis = 'calibrated_final_cont.ms'
@@ -345,9 +352,84 @@ tclean(vis=contvis,
 	   threshold=threshold,
 	   interactive=interactive,
 	   uvtaper=uvtaper,
-	   scales=scales)
+	   scales=scales,
+	   pbcor=True)
 
+# interactive cleaning
+# drew regions around areas with 3 sigma above background
+# background rms ~ 1e-5 
+# picked out regions with peaks > 3e-5 
+```
+### primary beam correct band 4 12m
+
+```python
+import glob
+
+myimages = glob.glob('*.image')
+rmtables('*.pbcor')
+for image in myimages:
+	pbimage = image.rsplit('.',1)[0]+'.flux'
+	outfile = image.rsplit('.',1)[0]+'.pbcor'
+	impbcor(imagename=image, pbimage=pbimage, outfile = outfile)
 
 
 ```
+
+
+## imaging for band 7 7m
+
+```python
+
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
+
+field = 'NGC_628'			# selects all fields in the mosiac
+imagermode = 'mosaic'
+phasecenter = 26 			# the center field which is the same as field chosen when checking the weights
+
+# to determine cell size, first get longest baseline in wavelengths
+plotms(vis=contvis, xaxis='uvwave', yaxis='amp')
+# estimate beam size --> 206265.0/(longest baseline in wavelengths)
+# divide beam size by 5-8 --> better to have slightly too many cells per beam than too few
+cell = '0.5arcsec'
+# can also use analysisUtils (import sys, sys.path.append('path/to/analysis_scripts'), import analysisUtils as au) to get both cell size and imsize:
+au.pickCellSize(contvis, imsize=True)
+# gives 0.8 arcsec cell with [180,180] pixel imsize
+# get the same result in both casa 4.7.0 and casa 5.1.2
+# want to pad the imsize to make sure we don't cut off any extended emission
+imsize = [300,300]
+
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = -0.5
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+scales = [0,5,15]
+
+contimagename = '7mband7_robust-0.5_multiscale_cleaned_v2'
+
+tclean(vis=contvis,
+	   imagename=contimagename,
+	   field=field,
+	   phasecenter=phasecenter,
+	   specmode='mfs',
+	   deconvolver='clark',
+	   imsize=imsize,
+	   cell=cell,
+	   weighting=weighting,
+	   robust=robust,
+	   niter=niter,
+	   threshold=threshold,
+	   interactive=interactive,
+	   scales=scales,
+	   pbcor=True,
+	   mask='cont.mask')
+```
+
+
 
