@@ -314,6 +314,47 @@ plotms(vis=contvis,xaxis='uvdist',yaxis='amp',coloraxis='spw')
 ## imaging for band 4 12m
 
 ```python
+"""
+tclean parameters:
+
+field: 			mosiac so set to 'NGC_628' to use all fields in the mosiac
+imagermode:		'mosiac' because this is a mosiac
+phasecenter:	field in the center of the image
+cell: 			cell size - essentially pixels across the beam
+imsize:			final image size in pixels
+outframe:		velocity frame to output. barycentric is fine
+veltype: 		velocity type - documentation recommends to keep as 'radio'
+weighting: 		weighting for combining interferometric data
+robust: 		changes resolution/sensitivity: smaller number (negative) - higher ang resolution, lower sensitivity. bigger number - lower ang resolution, greater sensitiviy (for more extended things)
+interactive: 	interactive masking or not
+niter: 			max number of iterations for cleaning
+threshold: 		threshold for stopping the cleaning cycles
+scales: 		scales for the multiscale cleaning
+mask:			apply a previously saved mask or not
+imagename: 		the final image name 
+
+for getting phasecenter, cell size, and image size, we can use analysisUtils
+to get analysisUtils:
+download tar from website: https://casaguides.nrao.edu/index.php/Analysis_Utilities
+extract and put wherever
+in casa:
+import sys
+sys.path.append('path/to/analysis_scripts')
+import analysisUtils as au
+
+au.pickCellSize(contvis, imsize=True)
+
+this will output something like (0.8, [180,180], 27) where
+0.8 --> recommended cell size in arcsec (does not take into account projected baselines so may want to use slightly lower cell size)
+[180,180] --> image size in pixels. for mosiacs, want to go bigger to pad the sides to make sure you get extended emissions
+27 --> field closest to center of the image
+
+can also get cell size by first getting longest baseline in wavelengths:
+plotms(vis=contvis, xaxis='uvwave', yaxis='amp')
+# estimate beam size --> 206265.0/(longest baseline in wavelengths)
+# divide beam size by 5-8 --> better to have slightly too many cells per beam than too few
+"""
+# don't necessarily need pipeline version of casa for imaging
 contvis = 'calibrated_final_cont.ms'
 clearcal(vis=contvis)
 delmod(vis=contvis)
@@ -335,15 +376,16 @@ threshold = '0.0mJy'
 uvtaper = ['1arcsec']
 
 scales = [0,5,15]
+mask = None
 
-contimagename = '12mband4_robust+2_uvtaper1arcsec_multiscale_cleaned'
+contimagename = '12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom'
 
 tclean(vis=contvis,
 	   imagename=contimagename,
 	   field=field,
 	   phasecenter=phasecenter,
 	   specmode='mfs',
-	   deconvolver='clark',
+	   deconvolver='hogbom',
 	   imsize=imsize,
 	   cell=cell,
 	   weighting=weighting,
@@ -353,28 +395,24 @@ tclean(vis=contvis,
 	   interactive=interactive,
 	   uvtaper=uvtaper,
 	   scales=scales,
+	   mask = mask,
 	   pbcor=True)
 
 # interactive cleaning
 # drew regions around areas with 3 sigma above background
 # background rms ~ 1e-5 
 # picked out regions with peaks > 3e-5 
-```
-### primary beam correct band 4 12m
 
-```python
-import glob
-
-myimages = glob.glob('*.image')
-rmtables('*.pbcor')
-for image in myimages:
-	pbimage = image.rsplit('.',1)[0]+'.flux'
-	outfile = image.rsplit('.',1)[0]+'.pbcor'
-	impbcor(imagename=image, pbimage=pbimage, outfile = outfile)
-
+# once done with that, can save the masked used interactively with
+contmaskname = 'cont.mask'
+rmtables(contmaskname) # if you want to delete the old mask
+os.system('cp -ir ' + contimagename + '.mask ' + contmaskname)
+# then when running tclean again, you can call
+mask = contmaskname
+# and probably want to do
+interactive = False
 
 ```
-
 
 ## imaging for band 7 7m
 
@@ -384,21 +422,12 @@ contvis = 'calibrated_final_cont.ms'
 clearcal(vis=contvis)
 delmod(vis=contvis)
 
-field = 'NGC_628'			# selects all fields in the mosiac
+field = 'NGC_628'
 imagermode = 'mosaic'
-phasecenter = 26 			# the center field which is the same as field chosen when checking the weights
+phasecenter = 27
 
-# to determine cell size, first get longest baseline in wavelengths
-plotms(vis=contvis, xaxis='uvwave', yaxis='amp')
-# estimate beam size --> 206265.0/(longest baseline in wavelengths)
-# divide beam size by 5-8 --> better to have slightly too many cells per beam than too few
 cell = '0.5arcsec'
-# can also use analysisUtils (import sys, sys.path.append('path/to/analysis_scripts'), import analysisUtils as au) to get both cell size and imsize:
-au.pickCellSize(contvis, imsize=True)
-# gives 0.8 arcsec cell with [180,180] pixel imsize
-# get the same result in both casa 4.7.0 and casa 5.1.2
-# want to pad the imsize to make sure we don't cut off any extended emission
-imsize = [300,300]
+imsize = [180,180]
 
 outframe = 'bary'
 veltype = 'radio'
@@ -410,15 +439,17 @@ niter = 1000
 threshold = '0.0mJy'
 
 scales = [0,5,15]
+mask=None
+interactive=True
 
-contimagename = '7mband7_robust-0.5_multiscale_cleaned_v2'
+contimagename = '7mband7_robust-0.5_multiscale_hogbom'
 
 tclean(vis=contvis,
 	   imagename=contimagename,
 	   field=field,
 	   phasecenter=phasecenter,
 	   specmode='mfs',
-	   deconvolver='clark',
+	   deconvolver='hogbom',
 	   imsize=imsize,
 	   cell=cell,
 	   weighting=weighting,
@@ -427,8 +458,9 @@ tclean(vis=contvis,
 	   threshold=threshold,
 	   interactive=interactive,
 	   scales=scales,
-	   pbcor=True,
-	   mask='cont.mask')
+	   mask=mask,
+	   pbcor=True)
+
 ```
 
 
