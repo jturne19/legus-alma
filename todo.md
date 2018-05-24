@@ -2,8 +2,7 @@
 
 ## data reduction
 
-1. image prep and imaging for 12m band 7
-2. combine band 7 images --> TP + INT
+1. combine band 7 images --> TP + INT
 	- feather
 
 ## analysis
