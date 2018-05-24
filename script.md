@@ -671,3 +671,46 @@ mask = contmaskname
 interactive = False
 
 ```
+
+## export to fits
+
+```python
+# 12m Band 4
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.image/', '12mband4.image.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.image.pbcor/', '12mband4.image.pbcor.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.mask/', '12mband4.mask.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.model', '12mband4.model.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.pb', '12mband4.pb.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.psf', '12mband4.psf.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.residual', '12mband4.residual.fits')
+exportfits('12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom.sumwt', '12mband4.sumwt.fits')
+
+# 12m Band 7
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.image/', '12mband7.image.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.image.pbcor/', '12mband7.image.pbcor.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.mask/', '12mband7.mask.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.model', '12mband7.model.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.pb', '12mband7.pb.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.psf', '12mband7.psf.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.residual', '12mband7.residual.fits')
+exportfits('12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom.sumwt', '12mband7.sumwt.fits')
+
+# 7m Band 7
+exportfits('7mband7_robust-0.5_multiscale_hogbom.image/', '7mband7.image.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.image.pbcor/', '7mband7.image.pbcor.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.mask/', '7mband7.mask.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.model', '7mband7.model.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.pb', '7mband7.pb.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.psf', '7mband7.psf.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.residual', '7mband7.residual.fits')
+exportfits('7mband7_robust-0.5_multiscale_hogbom.sumwt', '7mband7.sumwt.fits')
+
+```
+
+# Observations:
+
+| Band | Freq (GHz) | Wavelength (mm) | Dish | #Execs | FOV     | Beam Size (arcsec) | RMS (Jy/beam) |
+|------|------------|-----------------|------|--------|---------|--------------------|---------------|
+| 4    | 145        | 2.1             | 12M  | 2/2    | 2' x 2' | 1.12 x 1.08        | 1e-5          |
+| 7    | 343        | 0.87            | 12m  | 7/7    | 2' x 2' | 0.94 x 0.88        | 2e-5          |
+| 7    | 343        | 0.87            | 7m   | 9/9    | 2' x 2' | 4.73 x 2.70        | 2e-4          |
