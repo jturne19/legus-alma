@@ -463,5 +463,64 @@ tclean(vis=contvis,
 
 ```
 
+## imaging for band 7 12m
 
+```python
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
 
+field = 'NGC_628'
+imagermode = 'mosaic'
+phasecenter = 71
+cell = '0.06arcsec'
+imsize = 2500
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = 2.0
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+uvtaper = ['1arcsec']
+
+scales = [0,5,15]
+mask = None
+
+contimagename = '12mband7_robust+2_uvtaper1arcsec_multiscale_hogbom'
+
+tclean(vis=contvis,
+	   imagename=contimagename,
+	   field=field,
+	   phasecenter=phasecenter,
+	   specmode='mfs',
+	   deconvolver='hogbom',
+	   imsize=imsize,
+	   cell=cell,
+	   weighting=weighting,
+	   robust=robust,
+	   niter=niter,
+	   threshold=threshold,
+	   interactive=interactive,
+	   uvtaper=uvtaper,
+	   scales=scales,
+	   mask = mask,
+	   pbcor=True)
+
+# interactive cleaning
+# drew regions around areas with 3 sigma above background
+# background rms ~ 1e-5 
+# picked out regions with peaks > 3e-5 
+
+# once done with that, can save the masked used interactively with
+contmaskname = 'cont.mask'
+rmtables(contmaskname) # if you want to delete the old mask
+os.system('cp -ir ' + contimagename + '.mask ' + contmaskname)
+# then when running tclean again, you can call
+mask = contmaskname
+# and probably want to do
+interactive = False
+
+```
