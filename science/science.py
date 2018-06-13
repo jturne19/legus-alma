@@ -33,12 +33,17 @@ b7_data = b7_hdu.data
 b7_bmaj = b7_header['bmaj'] * 3600.0 	# restoring beam major axis in arcsec
 b7_bmin = b7_header['bmin'] * 3600.0 	# restoring beam minor axis in arcsec
 
-
 # use sextractor to extract the dust regions
-b4_sexcmd = 'sextractor ../%s -c config.band4.sex -seeing_FWHM %1.2f -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
-b7_sexcmd = 'sextractor %s -c extract/config.band7.sex -seeing_FWHM %1.2f -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
+# need to run sextractor from physics network computer like uwpa
+b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -seeing_FWHM %1.2f -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
+b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -seeing_FWHM %1.2f -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
 
+# need to run sextractor from extract directory with the config files and default params things
+os.chdir('extract')
+# run sextractor commands
 try:
 	subprocess.call(b4_sexcmd.split())
+	subprocess.call(b7_sexcmd.split())
 except OSError as e:
 	print(e)
+
