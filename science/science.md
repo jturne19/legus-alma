@@ -17,5 +17,7 @@
 
 ### sextractor 
 
-in extract directory, there is config.band4.sex and config.band7.sex
-these are the configuration files needed for running sextractor
+in extract directory, there is config.sex and config.sex
+this is the configuration file needed for running sextractor
+parameters needed for specific band 4 and band 7 are in the command used to run sextractor
+
