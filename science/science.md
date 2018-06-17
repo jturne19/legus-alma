@@ -22,48 +22,39 @@ next opened that region in band 4, band 7, PACS, and SPIRE images and saved the 
 need to delete the extra stuff that ds9 puts in the region files
 now to do photometry:
 ```bash
-export PATH=/usr/local/Anaconda/bin:$PATH
-source activate iraf27
-cd /uwpa2/turner/legus-alma/science
-pyraf
+cd /uwpa2/turner/legus-alma/science/
+./imcnts.sh
+```
+this will do the global photometery on the herschel images
+for the alma images, iraf was being stupid so i had to copy over and do them on another computer
+```bash
+ssh turner@zulu
+cp -r /d/uwpa2/turner/legus-alma/science/global ~/tmp/
 
-cd
+xgterm -sb &
+cd ~/iraf/
+cl 
+cd /d/users/turner/tmp/global/
 xray
 xspatial
+imcnts band4.2D global.band4.pix 0. "" band4.tab
+imcnts band7.2D global.band7.pix 0. "" band7.tab
+cp *tab /d/uwpa2/turner/legus-alma/science/global
 
-cd herschel
-imcnts 'NGC0628_S500_110_SSS_111_PACSS_70'  'global.070.pix' "" 'NGC0628.pix070.0.sky' 'ngc0628.070.0.tab'
-imcnts 'NGC0628_S500_110_SSS_111_PACSS_100' 'global.100.pix' "" 'NGC0628.pix100.0.sky' 'ngc0628.100.0.tab'
-imcnts 'NGC0628_S500_110_SSS_111_PACSS_160' 'global.160.pix' "" 'NGC0628.pix160.0.sky' 'ngc0628.160.0.tab'
-imcnts 'NGC0628_S500_110_SSS_111_SPIRE_250' 'global.250.pix' "" 'NGC0628.pix250.0.sky' 'ngc0628.250.0.tab'
-imcnts 'NGC0628_S500_110_SSS_111_SPIRE_350' 'global.350.pix' "" 'NGC0628.pix350.0.sky' 'ngc0628.350.0.tab'
-imcnts 'NGC0628_S500_110_SSS_111_SPIRE_500' 'global.500.pix' "" 'NGC0628.pix500.0.sky' 'ngc0628.500.0.tab'
+cd /d/uwpa2/turner/legus-alma/science/global/
+cp ../herschel/gettables.c* ./
 
-# put all tabs into a list
-ls ngc0628*tab > tables.list
+ls *tab > tables.list
 
-# convert tabs to ascii
+# for some reasion this is not working for band4.tab and band7.tab
 task gettables = gettables.cl
 gettables @tables.list
-# copy the output over to the science direcotry
-cp tables.asc ../phot.herschel.asc
-
-cd ..
-# requires the 2 diminsional fits files...
-from astropy.io import fits
-hdul = fits.open('band4.fits')
-hdu = hdul[0]
-hdu.data = hdu.data[0][0]
-hdu.writeto('band4.2D.fits')
-
-hdul = fits.open('band7.fits')
-hdu = hdul[0]
-hdu.data = hdu.data[0][0]
-hdu.writeto('band7.2D.fits')
-
 
 
 ```
+### modified blackbody fit to the global photometry
+
+
 
 
 
