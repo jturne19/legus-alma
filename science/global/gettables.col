@@ -1,0 +1,5 @@
+source     ch*60
+net        r  f14.5
+pixels     i  i10
+bkgd	   r  f14.5
+error_pix  r  f14.10
