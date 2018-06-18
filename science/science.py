@@ -17,6 +17,7 @@ from ds9_regions_from_sextractor import get_regions
 from get_sextractor_in_footprint import in_footprint
 from overlapping_regions import overlap
 from mcmc_error_bars import mcmc_error
+from nearest_cluster import nearest_cluster
 
 """
 if starting with new band 4 and band 7 fits files, you need to:
@@ -26,12 +27,15 @@ if starting with new band 4 and band 7 fits files, you need to:
 """
 # decide what you want:
 
-global_phot = False		# perform global photometry?
-regions     = False		# use sextractor to get dust regions and whatnot?
-fluxes      = False		# calculate flux in dust regions and get slopes?
+global_phot               = True		# perform global photometry?
+regions                   = True		# use sextractor to get dust regions and whatnot?
+fluxes                    = True		# calculate flux in dust regions and get slopes?
+create_legus_region_files = False		# create ds9 region files from legus cluster catalog? (probably not necessary since those files are already on the github repo)
+closest_clusters          = True 		# find closest stellar clusters to dust regions?
 
+main_dir = '/uwpa2/turner/legus-alma/'
 
-os.chdir('/uwpa2/turner/legus-alma/science')
+os.chdir(main_dir + 'science')
 
 # define the band 4 and band 7 fits files to use
 b4_fits = 'band4.fits'
@@ -61,7 +65,7 @@ global_phot = False
 if global_phot:
 	from modBBfit import fit
 
-	os.chdir('/uwpa2/turner/legus-alma/science/herschel/')
+	os.chdir(main_dir + 'science/herschel/')
 	# first need pixel scale of the PACS and SPIRE images. units are MJy*pix/sr. we want Jy
 	head = fits.open('NGC0628_S500_110_SSS_111_PACSS_70.fits')[0].header
 	cd11 = head['CD1_1']	# deg/pix
@@ -112,7 +116,6 @@ if global_phot:
 	np.savetxt('radiation.dat', np.transpose([wfit, bb, ff, sync, flux_sum]), header='wavelength (micron) \t BB (W/m2) \t F-F flux (W/m2) \t Synchrotron (W/m2) \t BB+FF+Sync (W/m2)')
 	np.savetxt('bb_params.dat', [beta, T], header='best fit parameters for the modified blackbody fit \nbeta, +error, -error \ntemperature, +error, -error')
 
-regions = False
 if regions:
 	# read in band 4 header and data 
 	b4_hdulist = fits.open(b4_fits)
@@ -139,7 +142,7 @@ if regions:
 	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_thresh 1.0 -analysis_thresh 1.0 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
 	
 	# need to run sextractor from extract directory with the config files and default params things
-	os.chdir('extract')
+	os.chdir(main_dir+'science/extract')
 	
 	# run sextractor commands
 	try:
@@ -161,8 +164,8 @@ if regions:
 	overlap('band4.in_footprint.deg.reg', 'band7.in_footprint.deg.reg')
 	# outputs band4.overlap.deg.reg and band7.overlap.deg.reg
 
-fluxes = False
 if fluxes:
+	os.chdir(main_dir + 'science/extract')
 
 	# grab fluxes in regions
 	# need the band frequencies
@@ -174,7 +177,7 @@ if fluxes:
 	b4_flux, b4_fluxerr, b4_bg = np.loadtxt('band4.overlap.cat', usecols=[0,1,3], unpack=True)
 	b7_flux, b7_fluxerr, b7_bg = np.loadtxt('band7.overlap.cat', usecols=[0,1,3], unpack=True)
 	
-	os.chdir('/uwpa2/turner/legus-alma/science/')
+	os.chdir(main_dir + 'science/')
 	
 	# subtract out background
 	b4_flux = b4_flux - b4_bg
@@ -202,4 +205,55 @@ if fluxes:
 		err_params[i] = mcmc_error(slope, wavel, y, err)
 	
 	np.savetxt('slopes+errs.dat', err_params, header='mean slope \t std dev \t median slope')
+
+if create_legus_region_files:
+
+	os.chdir(main_dir + 'science/legus')
+
+	ra, dec, cl = np.loadtxt('hlsp_legus_hst_acs-wfc3_ngc628-c_multiband_v1_padagb-mwext-avgapcor.tab', usecols=[3,4,33], unpack=True)
+	all_clusters = np.loadtxt('hlsp_legus_hst_acs-wfc3_ngc628-c_multiband_v1_padagb-mwext-avgapcor.tab')
+
+	# first get rid of classes 0 and 4
+	w = np.where((cl != 0) & (cl != 4))[0]
+	ra = ra[w]
+	dec = dec[w]
+
+	all_clusters = all_clusters[w]
+
+	# output these star clusters as a ds9 degree region file
+	f = open('ngc628-c_clusters_class123.deg.reg', 'w')
+	f.write('fk5\n')
+
+	for i in range(len(ra)):
+		f.write('point(%1.6f,%1.6f) # point=X\n'%(ra[i], dec[i]))
+
+	f.close()
+
+	# write out new cluster catalog file with just classes 1,2,3
+	np.savetxt('ngc628-c_clusters_class123.cat', all_clusters, delimiter='\t')
+
+
+if closest_clusters:
+	os.chdir(main_dir + 'science')
+	dustcoords, starcoords, age, mass, excess = nearest_cluster('extract/band4.overlap.deg.reg')
+
+	# calculate angular separations
+	ang_sep = np.array([ dustcoords[i].separation(starcoords[i]).arcsec for i in range(len(dustcoords))])
+	# calculate physical separations in pc
+ 	phys_sep = np.array([ ang*10e6 / 206265 for ang in ang_sep ])
+
+ 	age_avg = np.array([ np.mean(a) for a in age ])
+ 	mass_avg = np.array([ np.mean(m) for m in mass ])
+ 	excess_avg = np.array([ np.mean(e) for e in excess])
+ 	phys_sep_avg = np.array([ np.mean(p) for p in phys_sep ])
+ 	ang_sep_avg = np.array([ np.mean(a) for a in ang_sep])
+
+ 	age_min = np.array([ np.min(a) for a in age ])
+ 	mass_min = np.array([ np.min(m) for m in mass ])
+ 	excess_min = np.array([ np.min(e) for e in excess ])
+ 	phys_sep_min = np.array([ np.min(p) for p in phys_sep])
+ 	ang_sep_min = np.array([ np.min(a) for a in ang_sep])
+
+ 	np.savetxt('closest_clusters_props.average.dat', np.transpose([ang_sep_avg, phys_sep_avg, age_avg, mass_avg, excess_avg]), header='ang sep (arsec) \t physical sep (pc) \t age (yr) \t mass (solar mass) \t E(B-V)')
+	np.savetxt('closest_clusters_props.minimum.dat', np.transpose([ang_sep_min, phys_sep_min, age_min, mass_min, excess_min]), header='ang sep (arsec) \t physical sep (pc) \t age (yr) \t mass (solar mass) \t E(B-V)')
 
