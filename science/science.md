@@ -10,8 +10,8 @@
 4. pick out regions that lie within the 80% pbcoverage area
 5. match dust regions across multiple bands (3,4,6,7) 
 	- can also use Halpha contours?
-
 6. measure continuum slope for these 'verified' regions
+
 7. match dust regions with their nearest neighbor stellar clusters
 8. any correlation between continuum slope and stellar cluster properties?
 
@@ -24,6 +24,12 @@ now to do photometry:
 ```bash
 cd /uwpa2/turner/legus-alma/science/
 ./imcnts.sh
+
+# need to get errors
+idl
+.r fitsky_ds9.pro 
+fitsky_ds9
+
 ```
 this will do the global photometery on the herschel images
 for the alma images, iraf was being stupid so i had to copy over and do them on another computer
@@ -46,18 +52,17 @@ cp ../herschel/gettables.c* ./
 
 ls *tab > tables.list
 
-# for some reasion this is not working for band4.tab and band7.tab
 task gettables = gettables.cl
 gettables @tables.list
 
+lo
+cp b*tab /d/uwpa2/turner/legus-alma/science/global/
+cp tables* /d/uwpa2/turner/legus-alma/science/global/
 
 ```
 ### modified blackbody fit to the global photometry
 
-
-
-
-
+want to take our so-called 'global' photometry in the herschel images and fit a modified blackbody to them. uses modBBfit.py
 
 ### sextractor 
 
