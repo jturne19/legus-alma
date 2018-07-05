@@ -24,15 +24,22 @@ if starting with new band 4 and band 7 fits files, you need to:
 	1. make sure to have pbcoverage files
 	2. take global.deg.reg and make new pixel files for band 4 and band 7 
 
+
+data1 --> results for sextractor with 5 pixels > 2 sigma
+data2 --> results for sextractor with 5 pixels > 3 sigma
+
 """
 # decide what you want:
 
 global_phot               = False		# perform global photometry?
-regions                   = False		# use sextractor to get dust regions and whatnot?
-fluxes                    = False		# calculate flux in dust regions and get slopes?
+regions                   = True		# use sextractor to get dust regions and whatnot?
+fluxes                    = True		# calculate flux in dust regions and get slopes?
 create_legus_region_files = False		# create ds9 region files from legus cluster catalog? (probably not necessary since those files are already on the github repo)
 closest_clusters          = True		# find closest stellar clusters to dust regions?
-plot                      = False		# do some plotting?
+plot                      = True		# do some plotting?
+backup					  = True 		# backup files
+backup_dir = 'data3'
+
 
 main_dir = '/uwpa2/turner/legus-alma/'
 
@@ -125,7 +132,6 @@ if global_phot:
 	b7_bmaj = b7_header['bmaj'] * 3600.0 
 	b7_bmin = b7_header['bmin'] * 3600.0 
 
-
 	beams = np.array([ np.pi/4.0 *b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
 	pixel_size = 0.06**2
 	pix_per_beam = beams/pixel_size	
@@ -181,8 +187,8 @@ if regions:
 	
 	# use sextractor to extract the dust regions
 	# need to run sextractor from physics network computer like uwpa
-	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_thresh 1.0 -analysis_thresh 1.0 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
-	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_thresh 1.0 -analysis_thresh 1.0 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
+	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_minarea 3 -detect_thresh 2.0 -analysis_thresh 2.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
+	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_minarea 3 -detect_thresh 2.0 -analysis_thresh 2.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
 	
 	# need to run sextractor from extract directory with the config files and default params things
 	os.chdir(main_dir+'science/extract')
@@ -235,6 +241,11 @@ if fluxes:
 	b4_flux = b4_flux - b4_bg
 	b7_flux = b7_flux - b7_bg
 	
+	b4_bmaj = 1.12562286853788
+	b4_bmin = 1.07750606536872
+	b7_bmaj = 1.11270332336436
+	b7_bmin = 1.04236483573908
+
 	# flux from sextractor is in Jy pix/beam so need to get rid of beam business
 	beams = np.array([ np.pi/4.0 *b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
 	pixel_size = 0.06**2
@@ -275,7 +286,7 @@ if create_legus_region_files:
 	all_clusters = all_clusters[w]
 
 	# output these star clusters as a ds9 degree region file
-	f = open('ngc628-c_clusters_class123.deg.reg', 'w')
+	f = open('ngc628-c_clusters_class123.deg.reg w')
 	f.write('fk5\n')
 
 	for i in range(len(ra)):
@@ -386,3 +397,22 @@ if plot:
 	plt.ylabel('Age (yr)')
 	plt.title('closest cluster')
 	plt.savefig('figs/age_sep_min.png')
+
+if backup:
+
+	os.chdir(main_dir + 'science')
+	# save relevant files in new directory
+
+	extract_files = 'cp extract/band4.cat extract/band4.in_footprint.cat extract/band4.in_footprint.deg.reg extract/band4.overlap.cat extract/band4.overlap.deg.reg extract/band7.cat extract/band7.in_footprint.cat extract/band7.in_footprint.deg.reg extract/band7.overlap.cat extract/band7.overlap.deg.reg '+backup_dir
+	herschel_files = 'cp herschel/bb_params.dat herschel/herschel_flux.dat herschel/radiation.dat herschel/sky.sigma.temp.dat '+backup_dir # also tables.asc renamed to tables.herschel.asc
+	global_files = 'cp global/alma_global_flux.dat '+backup_dir # also tables.asc renamed to tables.alma.asc
+	files = 'cp slopes+errs.dat all_clusters.dat closest_clusters_props.average.dat closest_clusters_props.minimum.dat '+backup_dir #also figs directory copied
+
+	subprocess.call(['mkdir', '-p', backup_dir])
+	subprocess.call(extract_files.split())
+	subprocess.call(herschel_files.split())
+	subprocess.call(['cp', 'herschel/tables.asc', backup_dir+'/tables.herschel.asc'])
+	subprocess.call(global_files.split())
+	subprocess.call(['cp', 'global/tables.asc', backup_dir+'/tables.alma.asc'])
+	subprocess.call(files.split())
+	subprocess.call(['cp', '-r', 'figs', backup_dir+'/'])
