@@ -1,0 +1,71 @@
+### LEGUS-ALMA paper notes:
+
+An ALMA-HST Study of Cold Dust Emission and Star Clusters
+An ALMA-LEGUS Study of Cold Dust Emission and Star Clusters
+
+# intro:
+- galaxy SED stuff?
+- dust processing
+- legus clusters?
+- use stuff from danny's original proposals
+
+# observations:
+- ALMA 12m band 4
+- ALMA 12m and 7m band 7
+- 11 hr (?) integrations
+- array configurations?
+- fields of view slightly offset
+- calibration and imaging:
+	- casa 4.7.0 calibration and imaging:
+		- clean: 
+			- check original casa_imaging_script.py for what we did in charlottesville
+
+	- casa 5.1.2 calibration and imaging: 
+		- tclean: specmode='mfs', deconvolver='mtmfs', nterms=2, gridder='mosaic'
+			- from email from ilsang
+			- double check on band 7 maps
+- feathered 7m and 12m band 7 images for flux recovery
+- legus data --> not sure how much should be said about legus stuff
+
+# methods?:
+- global photometry:
+	- circular region that fit in 80% pbcoverage of both band 4 and band 7 maps
+	- IRAF imcnts
+	- same region and imcnts for PACS and SPIRE data
+	- fit modified blackbody to PACS,SPIRE data 
+		- mcmc fitting if that matters
+- identifying dust
+	- sextractor to find sources >3 sigma !something to check/play with! over background with 5 contiguous pixels 
+	- only kept sources within 80% pbcoverage
+	- not confident on sextractor sources because only one source is immediately obvious
+	- identified sources that overlapped/matched up in both bands
+	- sextractor provides photometry on these regions
+	- found slope --> log(y1) - log(y0) / log(x1) - log(x2)
+- star cluster--dust matching
+	- found distance between each dust region and every cluster within 20" !double check this number!
+	- top 3 closest clusters kept
+	- the separations between dust and 3 clusters averaged together
+	- age of 3 clusters averaged together
+- co-dark:
+	- archival alma observation of CO(1-0)
+	- CPROPS to identify and measure gas clouds
+	- measure visible ism mass --> ! double check math!
+		- ism mass inferred from alma dust obseverations M_ism = 170x10^6 Msun
+		- THINGS 21cm map gives H1 mass M_H1 = 56x10^6 Msun
+		- 170x10^6 - 56x10^6 Msun = M_H2 = 95x10^6 Msun
+		- ALMA CO map gives an H2 mass M_H2 = 61x10^6 Msun
+		- 61x10^6 / 95x10^6 = 0.64 --> fraction of CO we can see 
+		- CO-Dark fraction = 36%
+# results and discussion:
+- submm/mm excess
+	- excess of emission at 2.1 mm above the extrapolation from herschel data
+	- free-free and synchrotron cannot account for this excess
+- star cluster--dust separation
+	- younger star clusters closer to dust
+	- similar results as Grasha+2018 for NGC7793 and SC--GMC separation
+- continuum slope vs sc age
+	- no correlation 
+- co-dark
+	- 36%
+	- does this agree with simulations: MW (Smith+2014) and GMCs (Wolfire+2010)
+	- does this agree with observations: MW survey (Langer+2014)
