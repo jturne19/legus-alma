@@ -1,7 +1,13 @@
+#!/d/users/turner/tools/anaconda3/bin/python
 """
 big 'ole python script that (hopefully) goes through the entire science procedure for give band 4 and band 7 fits files
 
 notes are given in science.md
+
+**python3**
+to run:
+ipython
+exec(open('science.py').read())
 
 """
 import numpy as np
@@ -26,7 +32,18 @@ if starting with new band 4 and band 7 fits files, you need to:
 
 
 data1 --> results for sextractor with 5 pixels > 2 sigma
-data2 --> results for sextractor with 5 pixels > 3 sigma
+data2 --> results for sextractor with 5 pixels > 2.5 sigma
+data3 --> results for sextractor with 5 pixels > 3.0 sigma
+
+data4 --> retry sextractor 5pix > 2 sigma 
+data5 --> retry sextractor 5pix > 2.5 sigma 
+data6 --> retry sextractor 5pix > 3.0 sigma
+data7 --> sextractor 2pix > 2 sigma
+data8 --> sextractor 2pix > 3 sigma
+
+data_oct23 --> using band4.ilsang.pbcor.fits & band7.ilsang.pbcor.fits | sextractor with 5 pixels > 2 sigma
+data_oct23_2 --> using band4.ilsang.pbcor.fits & band7.ilsang.feather.fits | sextractor with 5 pixels > 2 sigma
+data_oct23_3 --> using band4.ilsang.pbcor.fits & band7.ilsang.feather.fits | sextractor with 5 pixels > 3 sigma
 
 """
 # decide what you want:
@@ -38,7 +55,7 @@ create_legus_region_files = False		# create ds9 region files from legus cluster 
 closest_clusters          = True		# find closest stellar clusters to dust regions?
 plot                      = True		# do some plotting?
 backup					  = True 		# backup files
-backup_dir = 'data3'
+backup_dir = 'data_oct23_3'
 
 
 main_dir = '/uwpa2/turner/legus-alma/'
@@ -46,11 +63,11 @@ main_dir = '/uwpa2/turner/legus-alma/'
 os.chdir(main_dir + 'science')
 
 # define the band 4 and band 7 fits files to use
-b4_fits = 'band4.fits'
-b7_fits = 'band7.feather.fits'
+b4_fits = 'band4.ilsang.pbcor.fits'
+b7_fits = 'band7.ilsang.feather.fits'
 # define the other fits files needed
-b4_pbcoverage = 'band4.pbcoverage.fits'
-b7_pbcoverage = 'band7.pbcoverage.fits'
+b4_pbcoverage = 'band4.ilsang.pb.fits'
+b7_pbcoverage = 'band7.ilsang.pb.fits'
 
 
 # defining some functions
@@ -187,8 +204,8 @@ if regions:
 	
 	# use sextractor to extract the dust regions
 	# need to run sextractor from physics network computer like uwpa
-	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_minarea 3 -detect_thresh 2.0 -analysis_thresh 2.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
-	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_minarea 3 -detect_thresh 2.0 -analysis_thresh 2.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
+	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_minarea 5 -detect_thresh 1.5 -analysis_thresh 1.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
+	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_minarea 5 -detect_thresh 1.5 -analysis_thresh 1.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
 	
 	# need to run sextractor from extract directory with the config files and default params things
 	os.chdir(main_dir+'science/extract')
@@ -210,8 +227,8 @@ if regions:
 	# outputs band4.in_footprint.reg and band7.in_footprint.reg
 	done = False
 	while not done:
-		check = raw_input('Did you open the in_footprint.reg files and then save them as degree region files? [y/n] ')
-		if check == 'y'or check == 'yes' or check == 'Y' or check == 'Yes' or check == 'YES':
+		check = input('Did you open the in_footprint.reg files and then save them as degree region files? [y/n] ')
+		if check == 'y'or check == 'yes' or check == 'Y' or check == 'Yes' or check == 'YES' or check == 'yeet' or check == 'YEET':
 			# need to open band4.in_footprint.reg and band7.in_footprint.reg in ds9 and save as degree region files
 			overlap('band4.in_footprint.deg.reg', 'band7.in_footprint.deg.reg')
 			# outputs band4.overlap.deg.reg and band7.overlap.deg.reg
@@ -308,21 +325,21 @@ if closest_clusters:
 	# calculate angular separations
 	ang_sep = np.array([ dustcoords[i].separation(starcoords[i]).arcsec for i in range(len(dustcoords))])
 	# calculate physical separations in pc
- 	phys_sep = np.array([ ang*10e6 / 206265 for ang in ang_sep ])
+	phys_sep = np.array([ ang*10e6 / 206265 for ang in ang_sep ])
 
- 	age_avg = np.array([ np.mean(a) for a in age ])
- 	mass_avg = np.array([ np.mean(m) for m in mass ])
- 	excess_avg = np.array([ np.mean(e) for e in excess])
- 	phys_sep_avg = np.array([ np.mean(p) for p in phys_sep ])
- 	ang_sep_avg = np.array([ np.mean(a) for a in ang_sep])
+	age_avg = np.array([ np.mean(a) for a in age ])
+	mass_avg = np.array([ np.mean(m) for m in mass ])
+	excess_avg = np.array([ np.mean(e) for e in excess])
+	phys_sep_avg = np.array([ np.mean(p) for p in phys_sep ])
+	ang_sep_avg = np.array([ np.mean(a) for a in ang_sep])
 
- 	age_min = np.array([ np.min(a) for a in age ])
- 	mass_min = np.array([ np.min(m) for m in mass ])
- 	excess_min = np.array([ np.min(e) for e in excess ])
- 	phys_sep_min = np.array([ np.min(p) for p in phys_sep])
- 	ang_sep_min = np.array([ np.min(a) for a in ang_sep])
+	age_min = np.array([ np.min(a) for a in age ])
+	mass_min = np.array([ np.min(m) for m in mass ])
+	excess_min = np.array([ np.min(e) for e in excess ])
+	phys_sep_min = np.array([ np.min(p) for p in phys_sep])
+	ang_sep_min = np.array([ np.min(a) for a in ang_sep])
 
- 	np.savetxt('closest_clusters_props.average.dat', np.transpose([ang_sep_avg, phys_sep_avg, age_avg, mass_avg, excess_avg]), header='ang sep (arsec) \t physical sep (pc) \t age (yr) \t mass (solar mass) \t E(B-V)')
+	np.savetxt('closest_clusters_props.average.dat', np.transpose([ang_sep_avg, phys_sep_avg, age_avg, mass_avg, excess_avg]), header='ang sep (arsec) \t physical sep (pc) \t age (yr) \t mass (solar mass) \t E(B-V)')
 	np.savetxt('closest_clusters_props.minimum.dat', np.transpose([ang_sep_min, phys_sep_min, age_min, mass_min, excess_min]), header='ang sep (arsec) \t physical sep (pc) \t age (yr) \t mass (solar mass) \t E(B-V)')
 
 if plot:
