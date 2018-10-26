@@ -136,7 +136,7 @@ outertaper = '1arcsec'
 
 contimagename = '12mband4_robust+2_uvtaper1arcsec_multiscale_hogbom'
 
-clean(vis=contvis,
+tclean(vis=contvis,
      imagename=contimagename,
      field=field,
      phasecenter=phasecenter,
@@ -283,3 +283,272 @@ interactive = False
 | 7    | 343        | 0.87            | 7m   | 9/9    | 2' x 2' | 4.73 x 2.70        | 2e-4          |
 
 | 7    | 343        | 0.87            | 7m+12m (feather)        | 1.11 x 1.04        |
+
+
+
+# Rerun imaging using Ilsang's tclean parameters
+
+## band 4 12m 
+
+```python
+# CASA 5.4.0-68
+
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
+
+field = 'NGC_628'
+imagermode = 'mosaic'
+phasecenter = 15
+cell = '0.06arcsec'
+imsize = [2500,2500]
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = 2.0
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+uvtaper = ['1arcsec']
+
+contimagename = '12mband4.ilsang'
+
+tclean(vis=contvis,
+     imagename=contimagename,
+     field=field,
+     phasecenter=phasecenter,
+     specmode='mfs',
+     deconvolver='mtmfs',
+     nterms=2,
+     gridder='mosaic',
+     imsize = imsize, 
+     cell= cell, 
+     weighting = weighting, 
+     robust = robust,
+     niter = niter, 
+     threshold = threshold, 
+     interactive = interactive,
+     uvtaper = uvtaper)
+
+# save mask
+contmaskname = 'cont.mask'
+rmtables(contmaskname) # if you want to delete the old mask
+os.system('cp -ir ' + contimagename + '.mask ' + contmaskname)
+
+# create primary beam corrected image 
+impbcor(imagename=contimagename+'.image.tt0',
+     pbimage=contimagename+'.pb.tt0',
+     outfile=contimagename+'.image.pbcor.tt0')
+
+# export image, pbcor, and pb to fits files
+exportfits(imagename=contimagename+'.image.tt0',
+     fitsimage=contimagename+'.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.image.pbcor.tt0',
+     fitsimage=contimagename+'.pbcor.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.pb.tt0',
+     fitsimage=contimagename+'.pb.fits',
+     dropdeg=True)
+
+```
+## band 7 7m
+
+```python
+# CASA 5.4.0-68
+
+# this observation is from Cycle 4 so it is affected by the flux calibration issues reported by the ALMA and CASA people
+# important to do this in the newest version of CASA 
+
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
+
+field = 'NGC_628'
+imagermode = 'mosaic'
+phasecenter = 27
+
+cell = '0.5arcsec'
+imsize = [300,300]
+
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = -0.5
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+contimagename = '7mband7.ilsang'
+
+tclean(vis=contvis,
+     imagename=contimagename,
+     field=field,
+     phasecenter=phasecenter,
+     specmode='mfs',
+     deconvolver='mtmfs',
+     nterms=2,
+     gridder='mosaic',
+     imsize = imsize, 
+     cell= cell, 
+     weighting = weighting, 
+     robust = robust,
+     niter = niter, 
+     threshold = threshold, 
+     interactive = interactive)
+
+# save mask
+contmaskname = 'cont.mask'
+rmtables(contmaskname) # if you want to delete the old mask
+os.system('cp -ir ' + contimagename + '.mask ' + contmaskname)
+
+# create primary beam corrected image
+impbcor(imagename=contimagename+'.image.tt0',
+     pbimage=contimagename+'.pb.tt0',
+     outfile=contimagename+'.image.pbcor.tt0')
+
+# export image, pbcor, and pb to fits files
+exportfits(imagename=contimagename+'.image.tt0',
+     fitsimage=contimagename+'.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.image.pbcor.tt0',
+     fitsimage=contimagename+'.pbcor.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.pb.tt0',
+     fitsimage=contimagename+'.pb.fits',
+     dropdeg=True)
+
+```
+
+## band 7 12m 
+
+```python
+# CASA 5.4.0-68
+
+contvis = 'calibrated_final_cont.ms'
+clearcal(vis=contvis)
+delmod(vis=contvis)
+
+field = 'NGC_628'
+imagermode = 'mosaic'
+phasecenter = 71
+cell = '0.06arcsec'
+imsize = [2500,2500]
+outframe = 'bary'
+veltype = 'radio'
+weighting = 'briggs'
+
+robust = 2.0
+interactive = True
+niter = 1000
+threshold = '0.0mJy'
+
+uvtaper = ['1.2arcsec']
+
+contimagename = '12mband7.ilsang'
+
+tclean(vis=contvis,
+     imagename=contimagename,
+     field=field,
+     phasecenter=phasecenter,
+     specmode='mfs',
+     deconvolver='mtmfs',
+     nterms=2,
+     gridder='mosaic',
+     imsize = imsize, 
+     cell= cell, 
+     weighting = weighting, 
+     robust = robust,
+     niter = niter, 
+     threshold = threshold, 
+     interactive = interactive,
+     uvtaper = uvtaper)
+
+# save mask
+contmaskname = 'cont.mask'
+rmtables(contmaskname) # if you want to delete the old mask
+os.system('cp -ir ' + contimagename + '.mask ' + contmaskname)
+
+# create primary beam corrected image
+impbcor(imagename=contimagename+'.image.tt0',
+     pbimage=contimagename+'.pb.tt0',
+     outfile=contimagename+'.image.pbcor.tt0')
+
+# export image, pbcor, and pb to fits files
+exportfits(imagename=contimagename+'.image.tt0',
+     fitsimage=contimagename+'.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.image.pbcor.tt0',
+     fitsimage=contimagename+'.pbcor.fits',
+     dropdeg=True)
+
+exportfits(imagename=contimagename+'.pb.tt0',
+     fitsimage=contimagename+'.pb.fits',
+     dropdeg=True)
+
+# output the 'dirty' image by calling tclean with 0 iterations
+interactive = False
+niter = 0
+contimagename = '12mband7.ilsang.dirty'
+
+tclean(vis=contvis,
+     imagename=contimagename,
+     field=field,
+     phasecenter=phasecenter,
+     specmode='mfs',
+     deconvolver='mtmfs',
+     nterms=2,
+     gridder='mosaic',
+     imsize = imsize, 
+     cell= cell, 
+     weighting = weighting, 
+     robust = robust,
+     niter = niter, 
+     threshold = threshold, 
+     interactive = interactive,
+     uvtaper = uvtaper)
+
+```
+
+## feather band 7 images
+
+copied over the image, pbcor, and pb images to the ilsang directory
+
+played around with the low resolution scaling using casafeather (called from bash shell)
+
+scaling factors to try:
+     - 1.0
+     - 1.5
+     - 2.5
+     - 5.0
+
+also try feather using dirty 12m image 
+
+```python
+scalefactors = [1.0, 1.5, 2.5, 5.0]
+
+for scale in scalefactors:
+
+     feather(imagename = 'band7.ilsang.%1.1f.feather'%scale,
+          highres = '12mband7.ilsang.image.tt0',
+          lowres = '7mband7.ilsang.image.tt0',
+          sdfactor = scale)
+     
+# export fits
+
+for scale in scalefactors:
+     exportfits(imagename = 'band7.ilsang.%1.1f.feather'%scale,
+          fitsimage = 'band7.ilsang.%1.1f.feather.fits'%scale,
+          dropdeg = True)
+
+
+
+```
