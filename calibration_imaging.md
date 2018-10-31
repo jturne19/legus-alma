@@ -281,8 +281,7 @@ interactive = False
 | 4    | 145        | 2.1             | 12M  | 2/2    | 2' x 2' | 1.12 x 1.08        | 1e-5          |
 | 7    | 343        | 0.87            | 12m  | 7/7    | 2' x 2' | 0.94 x 0.88        | 2e-5          |
 | 7    | 343        | 0.87            | 7m   | 9/9    | 2' x 2' | 4.73 x 2.70        | 2e-4          |
-
-| 7    | 343        | 0.87            | 7m+12m (feather)        | 1.11 x 1.04        |
+| 7    | 343        | 0.87            | 7m+12m (feather)        | 1.11 x 1.04        | |
 
 
 
@@ -548,7 +547,12 @@ for scale in scalefactors:
      exportfits(imagename = 'band7.ilsang.%1.1f.feather'%scale,
           fitsimage = 'band7.ilsang.%1.1f.feather.fits'%scale,
           dropdeg = True)
-
-
-
 ```
+
+# Observations:
+
+| Band | Freq (GHz) | Wavelength (mm) | Dish | Image Name                | FOV     | Beam Size (arcsec) | RMS (Jy/beam) |
+|------|------------|-----------------|------|---------------------------|---------|--------------------|---------------|
+| 4    | 145        | 2.1             | 12m  | 12mband4.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.08        | 3e-5          |
+| 7    | 343        | 0.87            | 12m  | 12mband7.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.04        | 2e-4          |
+| 7    | 343        | 0.87            | 7m   |  7mband7.ilsang.image.tt0 | 2' x 2' | 4.78 x 2.73        | 7e-4          |
