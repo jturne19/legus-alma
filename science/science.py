@@ -45,17 +45,26 @@ data_oct23 --> using band4.ilsang.pbcor.fits & band7.ilsang.pbcor.fits | sextrac
 data_oct23_2 --> using band4.ilsang.pbcor.fits & band7.ilsang.feather.fits | sextractor with 5 pixels > 2 sigma
 data_oct23_3 --> using band4.ilsang.pbcor.fits & band7.ilsang.feather.fits | sextractor with 5 pixels > 3 sigma
 
+data_nov13 --> redo data_oct23 but with much closer overlapping criteria
+
+data_jan31 --> double check if fluxes are being correctly calculated from sextractor
+			   50 contigous pixels > 2 sigma (50 pixels ~ 1/5 beam size)
+
+data_feb5 --> same as before just now outputs the source fluxes [W/m2] in a seperate file
+
+data_feb7 --> last one 
+
 """
 # decide what you want:
 
-global_phot               = False		# perform global photometry?
+global_phot               = True		# perform global photometry?
 regions                   = True		# use sextractor to get dust regions and whatnot?
 fluxes                    = True		# calculate flux in dust regions and get slopes?
 create_legus_region_files = False		# create ds9 region files from legus cluster catalog? (probably not necessary since those files are already on the github repo)
 closest_clusters          = True		# find closest stellar clusters to dust regions?
 plot                      = True		# do some plotting?
 backup					  = True 		# backup files
-backup_dir = 'data_oct23_3'
+backup_dir = 'data_feb7'
 
 
 main_dir = '/uwpa2/turner/legus-alma/'
@@ -64,7 +73,7 @@ os.chdir(main_dir + 'science')
 
 # define the band 4 and band 7 fits files to use
 b4_fits = 'band4.ilsang.pbcor.fits'
-b7_fits = 'band7.ilsang.feather.fits'
+b7_fits = 'band7.ilsang.pbcor.fits'
 # define the other fits files needed
 b4_pbcoverage = 'band4.ilsang.pb.fits'
 b7_pbcoverage = 'band7.ilsang.pb.fits'
@@ -135,7 +144,7 @@ if global_phot:
 	flux_sum = bb + ff + sync
 
 	# alma global phot
-	anet, anum_of_pix = np.loadtxt(main_dir+'/science/global/tables.asc', usecols=[1,2], unpack=True)
+	anet, anum_of_pix = np.loadtxt(main_dir+'/science/global/tables.4.asc', usecols=[1,2], unpack=True)
 	# net is in units Jy*pix/beam
 	b4_hdulist = fits.open(main_dir+ 'science/'+b4_fits)
 	b4_hdu = b4_hdulist[0]
@@ -151,13 +160,15 @@ if global_phot:
 
 	beams = np.array([ np.pi/4.0 *b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
 	pixel_size = 0.06**2
-	pix_per_beam = beams/pixel_size	
+	pix_per_beam = beams/pixel_size
 
-	alma_flux = anet * alma_freq / pix_per_beam	# Jy
+	alma_flux = anet / pix_per_beam	# Jy 
 
+	print('\nband7 flux = %1.5f Jy\n'%alma_flux[1])
+	print('\nband4 flux = %1.5f Jy\n'%alma_flux[0])
 
 	# save alma data
-	np.savetxt(main_dir+'science/global/alma_global_flux.dat',np.transpose([const.c.value/alma_freq * 1e6, alma_flux*1e-26]), header='wavelength (micron) \t flux (W/m2)' )
+	np.savetxt(main_dir+'science/global/alma_global_flux.dat',np.transpose([const.c.value/alma_freq * 1e6, alma_flux*alma_freq*1e-26]), header='wavelength (micron) \t flux (W/m2)' )
 	# save herschel data
 	np.savetxt('herschel_flux.dat', np.transpose([const.c.value/freq * 1e6, flux*1e-26, flux_err]), header='wavelength (micron) \t flux (W/m2) \t 1 sigma error')
 	# save bb, ff, and sync data
@@ -183,6 +194,7 @@ if regions:
 
 	print('\ndoing dust region bidness \n')
 
+	os.chdir(main_dir + 'science/')
 	# read in band 4 header and data 
 	b4_hdulist = fits.open(b4_fits)
 	b4_hdu = b4_hdulist[0]
@@ -204,8 +216,8 @@ if regions:
 	
 	# use sextractor to extract the dust regions
 	# need to run sextractor from physics network computer like uwpa
-	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_minarea 5 -detect_thresh 1.5 -analysis_thresh 1.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
-	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_minarea 5 -detect_thresh 1.5 -analysis_thresh 1.5 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
+	b4_sexcmd = 'sex ../%s -c config.sex -catalog_name band4.cat -detect_minarea 50 -detect_thresh 1.0 -analysis_thresh 1.0 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b4_fits, b4_bmaj)
+	b7_sexcmd = 'sex ../%s -c config.sex -catalog_name band7.cat -detect_minarea 50 -detect_thresh 1.0 -analysis_thresh 1.0 -seeing_FWHM %1.2f -pixel_scale 0.06 -back_type manual -back_value 0.0'%(b7_fits, b7_bmaj)
 	
 	# need to run sextractor from extract directory with the config files and default params things
 	os.chdir(main_dir+'science/extract')
@@ -230,7 +242,7 @@ if regions:
 		check = input('Did you open the in_footprint.reg files and then save them as degree region files? [y/n] ')
 		if check == 'y'or check == 'yes' or check == 'Y' or check == 'Yes' or check == 'YES' or check == 'yeet' or check == 'YEET':
 			# need to open band4.in_footprint.reg and band7.in_footprint.reg in ds9 and save as degree region files
-			overlap('band4.in_footprint.deg.reg', 'band7.in_footprint.deg.reg')
+			overlap('band4.in_footprint.deg.reg', 'band7.in_footprint.deg.reg', sep=1.1)
 			# outputs band4.overlap.deg.reg and band7.overlap.deg.reg
 			done = True
 		else:
@@ -254,24 +266,47 @@ if fluxes:
 	
 	os.chdir(main_dir + 'science/')
 	
-	# subtract out background
-	b4_flux = b4_flux - b4_bg
-	b7_flux = b7_flux - b7_bg
-	
 	b4_bmaj = 1.12562286853788
 	b4_bmin = 1.07750606536872
 	b7_bmaj = 1.11270332336436
 	b7_bmin = 1.04236483573908
 
 	# flux from sextractor is in Jy pix/beam so need to get rid of beam business
-	beams = np.array([ np.pi/4.0 *b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
+	beams = np.array([ np.pi/4.0 * b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
 	pixel_size = 0.06**2
 	pix_per_beam = beams/pixel_size
 	
 	# Jy
-	flux = np.array([ b4_flux*freq[0]/pix_per_beam[0], b7_flux*freq[1]/pix_per_beam[1] ])
-	flux_err = np.array([ b4_fluxerr*freq[0]/pix_per_beam[0], b7_fluxerr*freq[1]/pix_per_beam[1] ])
-	
+	flux = np.array([ b4_flux/pix_per_beam[0], b7_flux/pix_per_beam[1] ])
+	flux_err = np.array([ b4_fluxerr/pix_per_beam[0], b7_fluxerr/pix_per_beam[1] ])
+
+	# Jy to W/m2
+	fWm2  = np.array([ flux[0] * 1e-26 * freq[0], flux[1] * 1e-26 * freq[1] ])
+	efWm2 = np.array([ flux_err[0] * 1e-26 * freq[0], flux_err[1] * 1e-26 * freq[1]])
+
+	# output
+	f = open('source_fluxes.dat', 'w')
+	f.write(f'{"# F(0.87mm) W/m2":>16}')
+	f.write('  ')
+	f.write(f'{"Error":>11}')
+	f.write('  ')
+	f.write(f'{"F(2.1mm) W/m2":>13}')
+	f.write('  ')
+	f.write(f'{"Error":>11}')
+	f.write('\n')
+
+	for i in range(len(fWm2[0])):
+		f.write(f'{"%1.5e"%fWm2[1][i]:>16}')
+		f.write('  ')
+		f.write(f'{"%1.5e"%efWm2[1][i]:>11}')
+		f.write('  ')
+		f.write(f'{"%1.5e"%fWm2[0][i]:>13}')
+		f.write('  ')
+		f.write(f'{"%1.5e"%efWm2[0][i]:>11}')
+		f.write('\n')
+
+	f.close()
+
 	# simple calculation of slopes
 	slopes = slope(freq, flux)
 	
@@ -415,6 +450,13 @@ if plot:
 	plt.title('closest cluster')
 	plt.savefig('figs/age_sep_min.png')
 
+	plt.figure()
+	plt.semilogx(phys_sep_min, slopes, 'ro')
+	plt.xlabel('Physical Separation (pc)')
+	plt.ylabel('Dust Continuum Slope')
+	plt.title('closest cluster')
+	plt.savefig('figs/slope_vs_sep.png')
+
 if backup:
 
 	os.chdir(main_dir + 'science')
@@ -423,13 +465,13 @@ if backup:
 	extract_files = 'cp extract/band4.cat extract/band4.in_footprint.cat extract/band4.in_footprint.deg.reg extract/band4.overlap.cat extract/band4.overlap.deg.reg extract/band7.cat extract/band7.in_footprint.cat extract/band7.in_footprint.deg.reg extract/band7.overlap.cat extract/band7.overlap.deg.reg '+backup_dir
 	herschel_files = 'cp herschel/bb_params.dat herschel/herschel_flux.dat herschel/radiation.dat herschel/sky.sigma.temp.dat '+backup_dir # also tables.asc renamed to tables.herschel.asc
 	global_files = 'cp global/alma_global_flux.dat '+backup_dir # also tables.asc renamed to tables.alma.asc
-	files = 'cp slopes+errs.dat all_clusters.dat closest_clusters_props.average.dat closest_clusters_props.minimum.dat '+backup_dir #also figs directory copied
+	files = 'cp slopes+errs.dat all_clusters.dat closest_clusters_props.average.dat closest_clusters_props.minimum.dat source_fluxes.dat '+backup_dir #also figs directory copied
 
 	subprocess.call(['mkdir', '-p', backup_dir])
 	subprocess.call(extract_files.split())
 	subprocess.call(herschel_files.split())
 	subprocess.call(['cp', 'herschel/tables.asc', backup_dir+'/tables.herschel.asc'])
 	subprocess.call(global_files.split())
-	subprocess.call(['cp', 'global/tables.asc', backup_dir+'/tables.alma.asc'])
+	subprocess.call(['cp', 'global/tables.4.asc', backup_dir+'/tables.alma.asc'])
 	subprocess.call(files.split())
 	subprocess.call(['cp', '-r', 'figs', backup_dir+'/'])
