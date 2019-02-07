@@ -62,8 +62,8 @@ split2(vis=finalvis,
 # 7m band 7 --- antenna='CM05', field='26'
 # 12m band 7 -- antenna='DA59', field='71'
 
-antenna = 'CM05'
-field = '26'
+antenna = 'DA49'
+field = '15'
 plotms(vis=contvis, yaxis='wtsp',xaxis='freq',spw='',antenna=antenna,field=field ) 
 
 # inspect continuum for any problems
@@ -553,6 +553,14 @@ for scale in scalefactors:
 
 | Band | Freq (GHz) | Wavelength (mm) | Dish | Image Name                | FOV     | Beam Size (arcsec) | RMS (Jy/beam) |
 |------|------------|-----------------|------|---------------------------|---------|--------------------|---------------|
-| 4    | 145        | 2.1             | 12m  | 12mband4.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.08        | 3e-5          |
-| 7    | 343        | 0.87            | 12m  | 12mband7.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.04        | 2e-4          |
-| 7    | 343        | 0.87            | 7m   |  7mband7.ilsang.image.tt0 | 2' x 2' | 4.78 x 2.73        | 7e-4          |
+| 4    | 145        | 2.1             | 12m  | 12mband4.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.08        | 3.2e-5        |
+| 7    | 343        | 0.87            | 12m  | 12mband7.ilsang.image.tt0 | 2' x 2' | 1.12 x 1.04        | 2.3e-4        |
+| 7    | 343        | 0.87            | 7m   |  7mband7.ilsang.image.tt0 | 2' x 2' | 4.78 x 2.73        | 8.8e-4        |
+
+## Primary Beam Corrected Images
+
+| Band | Freq (GHz) | Wavelength (mm) | Dish | Image Name                      | RMS (Jy/beam) |
+|------|------------|-----------------|------|---------------------------------|---------------|
+| 4    | 145        | 2.1             | 12m  | 12mband4.ilsang.image.pbcor.tt0 | 6.76e-5       |
+| 7    | 343        | 0.87            | 12m  | 12mband7.ilsang.image.pbcor.tt0 | 3.77e-4       |
+| 7    | 343        | 0.87            | 7m   |  7mband7.ilsang.image.pbcor.tt0 | 1.75e-3       |
