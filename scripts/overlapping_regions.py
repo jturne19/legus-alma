@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord, search_around_sky
 import astropy.units as u
 
-def overlap(b4_reg, b7_reg):
+def overlap(b4_reg, b7_reg, sep):
 	""" 
 	function to find ds9 ellipse regions that match or overlap between band 4 and band 7
 
@@ -46,7 +46,8 @@ def overlap(b4_reg, b7_reg):
 	c7 = SkyCoord(x7*u.deg, y7*u.deg, distance=10*u.Mpc)
 
 	# set max separation b/w regions (2 x beam size?)
-	sep = 2.2*u.arcsec
+	# sep = 2.2*u.arcsec
+	sep = sep*u.arcsec
 	coord_match = np.array([ match_function(c, c7, sep.to(u.degree)) for c in c4 ])
 
 	# get rid of Nones
