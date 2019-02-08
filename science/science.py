@@ -54,6 +54,9 @@ data_feb5 --> same as before just now outputs the source fluxes [W/m2] in a sepe
 
 data_feb7 --> last one 
 
+data_feb8 --> nevermind this is the last one since overlapping_regions was set to 2.2 arcsec for the separation
+			  but want to have just 1.1 arcsec (beam size)
+
 """
 # decide what you want:
 
@@ -64,7 +67,7 @@ create_legus_region_files = False		# create ds9 region files from legus cluster 
 closest_clusters          = True		# find closest stellar clusters to dust regions?
 plot                      = True		# do some plotting?
 backup					  = True 		# backup files
-backup_dir = 'data_feb7'
+backup_dir = 'data_feb8'
 
 
 main_dir = '/uwpa2/turner/legus-alma/'
@@ -467,11 +470,35 @@ if backup:
 	global_files = 'cp global/alma_global_flux.dat '+backup_dir # also tables.asc renamed to tables.alma.asc
 	files = 'cp slopes+errs.dat all_clusters.dat closest_clusters_props.average.dat closest_clusters_props.minimum.dat source_fluxes.dat '+backup_dir #also figs directory copied
 
-	subprocess.call(['mkdir', '-p', backup_dir])
-	subprocess.call(extract_files.split())
-	subprocess.call(herschel_files.split())
-	subprocess.call(['cp', 'herschel/tables.asc', backup_dir+'/tables.herschel.asc'])
-	subprocess.call(global_files.split())
-	subprocess.call(['cp', 'global/tables.4.asc', backup_dir+'/tables.alma.asc'])
-	subprocess.call(files.split())
-	subprocess.call(['cp', '-r', 'figs', backup_dir+'/'])
+	try:
+		subprocess.call(['mkdir', '-p', backup_dir])
+	except:
+		print('failed to make backup directory')
+	try:
+		subprocess.call(extract_files.split())
+	except:
+		print('failed to copy extract directory files')
+	try:
+		subprocess.call(herschel_files.split())
+	except:
+		print('failed to copy herschel directory files')
+	try:
+		subprocess.call(['cp', 'herschel/tables.asc', backup_dir+'/tables.herschel.asc'])
+	except:
+		print('failed to copy herschel tables')
+	try:
+		subprocess.call(global_files.split())
+	except:
+		print('failed to copy global flux files')
+	try:
+		subprocess.call(['cp', 'global/tables.4.asc', backup_dir+'/tables.alma.asc'])
+	except:
+		print('failed to global tables')
+	try:
+		subprocess.call(files.split())
+	except:
+		print('failed to copy main directory files')
+	try:
+		subprocess.call(['cp', '-r', 'figs', backup_dir+'/'])
+	except:
+		print('failed to copy the figs directory')
