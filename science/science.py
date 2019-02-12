@@ -57,6 +57,8 @@ data_feb7 --> last one
 data_feb8 --> nevermind this is the last one since overlapping_regions was set to 2.2 arcsec for the separation
 			  but want to have just 1.1 arcsec (beam size)
 
+data_feb12 --> just kidding, this is the last one. fixed beam sizes in fluxes section
+
 """
 # decide what you want:
 
@@ -67,7 +69,7 @@ create_legus_region_files = False		# create ds9 region files from legus cluster 
 closest_clusters          = True		# find closest stellar clusters to dust regions?
 plot                      = True		# do some plotting?
 backup					  = True 		# backup files
-backup_dir = 'data_feb8'
+backup_dir = 'data_feb12'
 
 
 main_dir = '/uwpa2/turner/legus-alma/'
@@ -269,10 +271,11 @@ if fluxes:
 	
 	os.chdir(main_dir + 'science/')
 	
-	b4_bmaj = 1.12562286853788
-	b4_bmin = 1.07750606536872
-	b7_bmaj = 1.11270332336436
-	b7_bmin = 1.04236483573908
+	# these are the wrong beam sizes (< 0.2% difference)
+	# b4_bmaj = 1.12562286853788
+	# b4_bmin = 1.07750606536872
+	# b7_bmaj = 1.11270332336436
+	# b7_bmin = 1.04236483573908
 
 	# flux from sextractor is in Jy pix/beam so need to get rid of beam business
 	beams = np.array([ np.pi/4.0 * b4_bmaj * b4_bmin, np.pi/4.0 * b7_bmaj*b7_bmin])
